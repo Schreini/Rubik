@@ -9,58 +9,93 @@ namespace Rubik
     {
         private static long AnzahlZuege = -1;
         private static char[][] Spielfeld;
+        private static char[][] Cards;
+        private static bool[] Used;
         private static DateTime LastTime = DateTime.Now;
+        private static int AnzahlCards = 0;
 
         static void Main(string[] args)
         {
-            List<char[]> cards = CreateCards();
-            Spielfeld =  new char[cards.Count][];
+            Cards = CreateCards().ToArray();
+            AnzahlCards = Cards.Count();
+            Spielfeld =  new char[AnzahlCards][];
+            Used = new bool[AnzahlCards];
 
-            foreach (var card in cards)
+            foreach (var card in Cards)
             {
                 Console.WriteLine(card);
             }
+            PrintCards(Cards);
 
-            LegeKarte(0, cards);
+            LegeKarte(0);
             Console.WriteLine("keine lösung gefunden.");
             Console.ReadLine();
         }
 
-        private static void LegeKarte(int spielfeldPos, List<char[]> cards)
+        private static void PrintCards(char[][] cards)
+        {
+            for (int row = 0; row < 25; row+=5)
+            {
+                for (int col = 0; col < 5; col++)
+                {
+                    Console.Write(string.Format(" {0}{1} ", cards[row + col][0], cards[row + col][1]));
+                }
+                Console.WriteLine();
+                for (int col = 0; col < 5; col++)
+                {
+                    Console.Write(string.Format("{0}  {1}", cards[row + col][7], cards[row + col][2]));
+                }
+                Console.WriteLine();
+                for (int col = 0; col < 5; col++)
+                {
+                    Console.Write(string.Format("{0}  {1}", cards[row + col][6], cards[row + col][3]));
+                }
+                Console.WriteLine();
+                for (int col = 0; col < 5; col++)
+                {
+                    Console.Write(string.Format(" {0}{1} ", cards[row + col][5], cards[row + col][4]));
+                }
+                Console.WriteLine();
+            }
+        }
+
+        private static void LegeKarte(int spielfeldPos)
         {
             AnzahlZuege += 1;
             if(AnzahlZuege%1000000==0)
             {
                 TimeSpan timeSpan = DateTime.Now - LastTime;
-                Console.WriteLine(string.Format("{0:mmss}\tZüge: {1}\tRestkarten: {2}", timeSpan, AnzahlZuege, cards.Count));
+                Console.WriteLine(string.Format("{0:mmss}\tZüge: {1}\tPosition: {2}", timeSpan, AnzahlZuege, spielfeldPos));
                 LastTime = DateTime.Now;
             }
-            if(cards.Count == 0)
+            if(spielfeldPos == AnzahlCards)
             {
                 //fertig?
                 Console.WriteLine("Fertig; Züge: " + AnzahlZuege);
+                PrintCards(Spielfeld);
                 Console.ReadLine();
             }
-            for(int i = 0; i < cards.Count; i++)
+            for(int i = 0; i < AnzahlCards; i++)
             {
+                if(Used[i]) continue;
                 for (int rotations = 0; rotations < 4; rotations++)
                 {
-                    if (Compare(spielfeldPos, cards[i]))
+                    if (Compare(spielfeldPos, Cards[i]))
                     {
-                        Spielfeld[spielfeldPos] = cards[i];
-                        var newCards = new List<char[]>(cards);
-                        newCards.RemoveAt(i);
-                        LegeKarte(spielfeldPos+1, newCards);
+                        Spielfeld[spielfeldPos] = Cards[i];
+                        Used[i] = true;
+                        //var newCards = new List<char[]>(cards);
+                        //newCards.RemoveAt(i);
+                        LegeKarte(spielfeldPos + 1);
+                        Spielfeld[spielfeldPos + 1] = null;
+                        Used[i] = false;
                     }
-                    else
-                    {
-                        Rotate(cards, i);
-                    }
+                    Rotate(Cards, i);
                 }
             }
         }
 
-        private static void Rotate(List<char[]> cards, int pos)
+        private static void Rotate(char[][] cards, int pos)
         {
             var rotatedCard = new char[8];
             Array.Copy(cards[pos], 2, rotatedCard, 0, 6);
@@ -73,7 +108,7 @@ namespace Rubik
             int posLinks = pos - 1;
             bool vglLinks = true;
             bool vglOben  = true;
-            if (posLinks % 5 != 0 && posLinks >= 0)
+            if (pos % 5 != 0 && posLinks >= 0)
             {
                 var links = Spielfeld[posLinks];
                 vglLinks = links[2] == card[7] && links[3] == card[6];
