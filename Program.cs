@@ -11,6 +11,7 @@ namespace Rubik
         private static char[][] Spielfeld;
         private static char[][] Cards;
         private static bool[] Used;
+        private static int[] Rotation;
         private static DateTime LastTime = DateTime.Now;
         private static int AnzahlCards = 0;
 
@@ -20,6 +21,7 @@ namespace Rubik
             AnzahlCards = Cards.Count();
             Spielfeld =  new char[AnzahlCards][];
             Used = new bool[AnzahlCards];
+            Rotation = new int[AnzahlCards];
 
             foreach (var card in Cards)
             {
@@ -34,35 +36,70 @@ namespace Rubik
 
         private static void PrintCards(char[][] cards)
         {
-            for (int row = 0; row < 25; row+=5)
+            Console.Write("Used: ");
+            new List<bool>(Used).ForEach(b => Console.Write(b ? "1" : " "));
+            Console.WriteLine();
+            Console.Write("Rota: ");
+            new List<int>(Rotation).ForEach(r => Console.Write(r));
+            Console.WriteLine();
+
+            for (int row = 0; row < 25; row += 5)
             {
                 for (int col = 0; col < 5; col++)
                 {
-                    Console.Write(string.Format(" {0}{1} ", cards[row + col][0], cards[row + col][1]));
+                    Colored(String.Format(" {0}{1} |", cards[row + col][0], cards[row + col][1]));
                 }
                 Console.WriteLine();
                 for (int col = 0; col < 5; col++)
                 {
-                    Console.Write(string.Format("{0}  {1}", cards[row + col][7], cards[row + col][2]));
+                    Colored(String.Format("{0}{1} {2}|", cards[row + col][7], Rotation[row + col], cards[row + col][2]));
                 }
                 Console.WriteLine();
                 for (int col = 0; col < 5; col++)
                 {
-                    Console.Write(string.Format("{0}  {1}", cards[row + col][6], cards[row + col][3]));
+                    Colored(String.Format("{0}  {1}|", cards[row + col][6], cards[row + col][3]));
                 }
                 Console.WriteLine();
                 for (int col = 0; col < 5; col++)
                 {
-                    Console.Write(string.Format(" {0}{1} ", cards[row + col][5], cards[row + col][4]));
+                    Colored(String.Format(" {0}{1} |", cards[row + col][5], cards[row + col][4]));
                 }
                 Console.WriteLine();
+                Console.WriteLine("-------------------------");
+            }
+        }
+
+        private static void Colored(string text)
+        {
+            foreach (char t in text)
+            {
+                switch(t)
+                {
+                    case 'a':
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        break;
+                    case 'b':
+                        Console.ForegroundColor = ConsoleColor.Blue;
+                        break;
+                    case 'c':
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        break;
+                    case 'd':
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        break;
+                    default:
+                        Console.ForegroundColor = ConsoleColor.White;
+                        break;
+                }
+                Console.Write(t);
+                Console.ForegroundColor = ConsoleColor.White;
             }
         }
 
         private static void LegeKarte(int spielfeldPos)
         {
             AnzahlZuege += 1;
-            if(AnzahlZuege%1000000==0)
+            if(AnzahlZuege%100000==0)
             {
                 TimeSpan timeSpan = DateTime.Now - LastTime;
                 Console.WriteLine(string.Format("{0:mmss}\tZüge: {1}\tPosition: {2}", timeSpan, AnzahlZuege, spielfeldPos));
@@ -90,17 +127,19 @@ namespace Rubik
                         Spielfeld[spielfeldPos + 1] = null;
                         Used[i] = false;
                     }
-                    Rotate(Cards, i);
+                    Rotate(i);
                 }
             }
         }
 
-        private static void Rotate(char[][] cards, int pos)
+        private static void Rotate(int pos)
         {
+            AnzahlZuege++;
             var rotatedCard = new char[8];
-            Array.Copy(cards[pos], 2, rotatedCard, 0, 6);
-            Array.Copy(cards[pos], 0, rotatedCard, 6, 2);
-            cards[pos] = rotatedCard;
+            Array.Copy(Cards[pos], 2, rotatedCard, 0, 6);
+            Array.Copy(Cards[pos], 0, rotatedCard, 6, 2);
+            Cards[pos] = rotatedCard;
+            Rotation[pos] = (Rotation[pos]+1)%4;
         }
 
         private static bool Compare(int pos, char[] card)
