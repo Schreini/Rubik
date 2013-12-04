@@ -11,45 +11,53 @@ namespace Rubik
         private static long AnzahlZuege = -1;
         private static CardSet[] Spielfeld;
         private static CardSet[] Cards;
-        private static DateTime LastTime = DateTime.Now;
+        private static DateTime CalcStart;
         private static BigInteger MaxAnzahlZüge;
+        private static BigInteger AnzahlZügeÜbersprungen;
         private static int AnzahlCards = 0;
 
         static void Main(string[] args)
         {
             Cards = CardSet.CreateCards();
             AnzahlCards = Cards.Count();
-            MaxAnzahlZüge = 1;
-
             PrintCards(Cards);
-            for (int i = 100; i != 0; i-=4)
-            {
-                MaxAnzahlZüge *= i;
-            }
+            MaxAnzahlZüge = CalculatePossibilities(25);
             Console.WriteLine("MaxAnzahlZüge: " + MaxAnzahlZüge);
             Spielfeld =  new CardSet[AnzahlCards];
-
+            CalcStart = DateTime.Now;
             LegeKarte(0);
-            Console.WriteLine("keine lösung gefunden.");
+            Console.WriteLine("Alles durchprobiert.");
             Console.ReadLine();
+        }
+
+        private static BigInteger CalculatePossibilities(int cardCount)
+        {
+            var result = new BigInteger(1);
+            for (int i = cardCount * 4; i != 0; i-=4)
+            {
+                result *= i;
+            }
+            return result;
         }
 
         private static void LegeKarte(int spielfeldPos)
         {
             AnzahlZuege += 1;
-
-            //if (AnzahlZuege % 100000 == 0)
-            //{
-            //    TimeSpan timeSpan = DateTime.Now - LastTime;
-            //    Console.WriteLine(string.Format("{0:mmss}\tZüge: {1}\tPosition: {2}", timeSpan, AnzahlZuege, spielfeldPos));
-            //    LastTime = DateTime.Now;
-            //}
+            bool recurse = false;
 
             if (spielfeldPos == AnzahlCards)
             {
-                //fertig?
-                Console.WriteLine("Fertig; Züge: " + AnzahlZuege);
+                //Lösung gefunden?
+                Console.WriteLine("#####################################################################################");
+                Console.WriteLine("Lösung gefunden:");
                 PrintCards(Spielfeld);
+                Console.WriteLine();
+                Console.WriteLine(string.Format("Dauer            : {0:mmss}", CalcStart - DateTime.Now));
+                Console.WriteLine(string.Format("Anzahl Züge      : {0,45}", AnzahlZuege));
+                Console.WriteLine(string.Format("Züge Übersprungen: {0,45}", AnzahlZügeÜbersprungen));
+                Console.WriteLine(string.Format("Max Züge         : {0,45}", MaxAnzahlZüge));
+                Console.WriteLine(string.Format("Züge offen       : {0,45}", MaxAnzahlZüge - AnzahlZügeÜbersprungen - AnzahlZuege));
+                CalcStart = DateTime.Now;
                 return;
             }
             for (int i = 0; i < AnzahlCards; i++)
@@ -63,12 +71,23 @@ namespace Rubik
                     {
                         Spielfeld[spielfeldPos] = Cards[i];
                         Cards[i].Used = true;
+                        recurse = true;
                         LegeKarte(spielfeldPos + 1);
                         Cards[i].Used = false;
                     }
                     Cards[i].Rotate();
                 }
+                if(!recurse)
+                {
+                    int unused = GetUnusedCardCount() - 1;
+                    AnzahlZügeÜbersprungen += CalculatePossibilities(unused);
+                }
             }
+        }
+
+        private static int GetUnusedCardCount()
+        {
+            return Cards.Where(c => !c.Used).Count();
         }
 
         private static void PrintCards(CardSet[] cards)
@@ -99,8 +118,6 @@ namespace Rubik
             }
         }
 
-
-
         private static bool Compare(int pos, CardSet cardSet)
         {
             int posLinks = pos - 1;
@@ -119,6 +136,5 @@ namespace Rubik
             }
             return vglLinks && vglOben;
         }
-
     }
 }
