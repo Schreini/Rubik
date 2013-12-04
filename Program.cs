@@ -12,6 +12,7 @@ namespace Rubik
         private static CardSet[] Spielfeld;
         private static CardSet[] Cards;
         private static DateTime CalcStart;
+        private static DateTime AppStart;
         private static BigInteger MaxAnzahlZüge;
         private static BigInteger AnzahlZügeÜbersprungen;
         private static int AnzahlCards = 0;
@@ -25,8 +26,11 @@ namespace Rubik
             Console.WriteLine("MaxAnzahlZüge: " + MaxAnzahlZüge);
             Spielfeld =  new CardSet[AnzahlCards];
             CalcStart = DateTime.Now;
+            AppStart = DateTime.Now;
             LegeKarte(0);
+            Console.WriteLine("#####################################################################################");
             Console.WriteLine("Alles durchprobiert.");
+            PrintFooter();
             Console.ReadLine();
         }
 
@@ -42,21 +46,13 @@ namespace Rubik
 
         private static void LegeKarte(int spielfeldPos)
         {
-            AnzahlZuege += 1;
-            bool recurse = false;
-
             if (spielfeldPos == AnzahlCards)
             {
                 //Lösung gefunden?
                 Console.WriteLine("#####################################################################################");
                 Console.WriteLine("Lösung gefunden:");
                 PrintCards(Spielfeld);
-                Console.WriteLine();
-                Console.WriteLine(string.Format("Dauer            : {0:mmss}", CalcStart - DateTime.Now));
-                Console.WriteLine(string.Format("Anzahl Züge      : {0,45}", AnzahlZuege));
-                Console.WriteLine(string.Format("Züge Übersprungen: {0,45}", AnzahlZügeÜbersprungen));
-                Console.WriteLine(string.Format("Max Züge         : {0,45}", MaxAnzahlZüge));
-                Console.WriteLine(string.Format("Züge offen       : {0,45}", MaxAnzahlZüge - AnzahlZügeÜbersprungen - AnzahlZuege));
+                PrintFooter();
                 CalcStart = DateTime.Now;
                 return;
             }
@@ -67,6 +63,9 @@ namespace Rubik
 
                 for (int rotations = 0; rotations < 4; rotations++)
                 {
+                    AnzahlZuege += 1;
+                    bool recurse = false;
+
                     if (Compare(spielfeldPos, Cards[i]))
                     {
                         Spielfeld[spielfeldPos] = Cards[i];
@@ -75,14 +74,25 @@ namespace Rubik
                         LegeKarte(spielfeldPos + 1);
                         Cards[i].Used = false;
                     }
+                    if (!recurse)
+                    {
+                        int unused = GetUnusedCardCount() - 1;
+                        AnzahlZügeÜbersprungen += CalculatePossibilities(unused);
+                    }
                     Cards[i].Rotate();
                 }
-                if(!recurse)
-                {
-                    int unused = GetUnusedCardCount() - 1;
-                    AnzahlZügeÜbersprungen += CalculatePossibilities(unused);
-                }
             }
+        }
+
+        private static void PrintFooter()
+        {
+            Console.WriteLine();
+            Console.WriteLine(string.Format("Dauer Calc       : {0:mmss}", CalcStart - DateTime.Now));
+            Console.WriteLine(string.Format("Dauer App        : {0:mmss}", AppStart - DateTime.Now));
+            Console.WriteLine(string.Format("Anzahl Züge      : {0,45}", AnzahlZuege));
+            Console.WriteLine(string.Format("Züge Übersprungen: {0,45}", AnzahlZügeÜbersprungen));
+            Console.WriteLine(string.Format("Max Züge         : {0,45}", MaxAnzahlZüge));
+            Console.WriteLine(string.Format("Züge offen       : {0,45}", MaxAnzahlZüge - AnzahlZügeÜbersprungen - AnzahlZuege));
         }
 
         private static int GetUnusedCardCount()
